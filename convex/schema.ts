@@ -14,6 +14,7 @@ export default defineSchema({
     name: v.string(),
     seniorityNumber: v.optional(v.number()),
     departmentId: v.id("departments"),
+    subDepartment: v.optional(v.string()),
     role: v.optional(v.string()),
     qualifications: v.optional(v.array(v.string())),
     email: v.string(),

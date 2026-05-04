@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as linkUser from "../linkUser.js";
 import type * as seed from "../seed.js";
 import type * as shifts from "../shifts.js";
 import type * as swapRequests from "../swapRequests.js";
@@ -24,6 +25,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
+  linkUser: typeof linkUser;
   seed: typeof seed;
   shifts: typeof shifts;
   swapRequests: typeof swapRequests;

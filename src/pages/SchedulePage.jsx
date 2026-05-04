@@ -1,13 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { ScheduleTable } from "../components/ScheduleTable";
 import { MyShifts } from "../components/MyShifts";
 import { SwapBoard } from "../components/SwapBoard";
-import { ClerkDashboard } from "./ClerkDashboard";
-
-const TABS = ["Schedule", "My Shifts", "Swap Board", "Clerk"];
+const TABS = ["Schedule", "My Shifts", "Swap Board"];
 
 export function SchedulePage() {
   const { signOut } = useAuthActions();
@@ -19,6 +17,7 @@ export function SchedulePage() {
 
   const [selectedPeriodId, setSelectedPeriodId] = useState(null);
   const [selectedDeptId, setSelectedDeptId] = useState(null);
+  const [nameFilter, setNameFilter] = useState("");
 
   const periodId = selectedPeriodId || periods?.[0]?._id;
 
@@ -27,9 +26,7 @@ export function SchedulePage() {
     periodId ? { schedulePeriodId: periodId } : "skip"
   );
 
-  const visibleTabs = currentWorker?.isClerk
-    ? TABS
-    : TABS.filter((t) => t !== "Clerk");
+  const visibleTabs = TABS;
 
   if (periods === undefined || departments === undefined) {
     return (
@@ -67,7 +64,7 @@ export function SchedulePage() {
             </div>
 
             <div className="flex items-center gap-3">
-              {currentWorker && (
+              {currentWorker ? (
                 <span className="text-sm text-slate-600 hidden sm:inline">
                   {currentWorker.name}
                   {currentWorker.isClerk && (
@@ -76,6 +73,8 @@ export function SchedulePage() {
                     </span>
                   )}
                 </span>
+              ) : (
+                <LinkProfileButtons />
               )}
               <button
                 onClick={() => signOut()}
@@ -92,7 +91,7 @@ export function SchedulePage() {
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex gap-1 -mb-px overflow-x-auto">
-            {visibleTabs.map((tab) => (
+            {TABS.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -137,6 +136,25 @@ export function SchedulePage() {
                 </option>
               ))}
             </select>
+
+            <div className="relative">
+              <svg
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+              </svg>
+              <input
+                type="text"
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                placeholder="Search by name..."
+                className="text-sm border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none w-48"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -148,6 +166,7 @@ export function SchedulePage() {
             shifts={shifts}
             selectedDeptId={selectedDeptId}
             currentWorker={currentWorker}
+            nameFilter={nameFilter}
           />
         )}
         {activeTab === "My Shifts" && (
@@ -156,14 +175,53 @@ export function SchedulePage() {
         {activeTab === "Swap Board" && (
           <SwapBoard currentWorker={currentWorker} />
         )}
-        {activeTab === "Clerk" && currentWorker?.isClerk && (
-          <ClerkDashboard
-            shifts={shifts}
-            selectedDeptId={selectedDeptId}
-            periodId={periodId}
-          />
-        )}
       </main>
     </div>
+  );
+}
+
+function LinkProfileButtons() {
+  const linkToWorker = useMutation(api.linkUser.linkToWorker);
+  const [showInput, setShowInput] = useState(false);
+  const [workerEmail, setWorkerEmail] = useState("");
+
+  async function handleLink(e) {
+    e.preventDefault();
+    try {
+      const result = await linkToWorker({ workerEmail: workerEmail.trim() });
+      alert(`Linked as ${result.linked}!`);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  if (!showInput) {
+    return (
+      <button
+        onClick={() => setShowInput(true)}
+        className="text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg hover:bg-blue-100 transition-colors"
+      >
+        Link Worker Profile
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={handleLink} className="flex gap-1">
+      <input
+        type="email"
+        value={workerEmail}
+        onChange={(e) => setWorkerEmail(e.target.value)}
+        placeholder="your-name@hospital.dev"
+        className="text-xs border border-slate-300 rounded-lg px-2 py-1 w-44 outline-none focus:ring-1 focus:ring-blue-500"
+        autoFocus
+      />
+      <button
+        type="submit"
+        className="text-xs font-medium text-white bg-blue-600 px-2 py-1 rounded-lg hover:bg-blue-700"
+      >
+        Go
+      </button>
+    </form>
   );
 }
